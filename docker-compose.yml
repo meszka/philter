@@ -36,3 +36,9 @@ services:
 
       echo 'Topics created.'
       "
+  scala-app:
+    build: .
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
