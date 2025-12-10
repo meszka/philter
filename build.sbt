@@ -27,3 +27,5 @@ assembly / assemblyMergeStrategy := {
   case other =>
     (assembly / assemblyMergeStrategy).value(other)
 }
+
+libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.13"
