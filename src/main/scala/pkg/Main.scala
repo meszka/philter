@@ -3,12 +3,25 @@ import java.util.Properties
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import org.nibor.autolink.{LinkExtractor, LinkType}
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import io.circe.parser.decode
+import pkg.SMS
 
 object Main {
-  def process(value: String): String = {
-    value.toUpperCase + " processed"
+  val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
+
+  def checkIfSMSIsSafe(sms: SMS): Boolean = {
+    val linkSpans = linkExtractor.extractLinks(sms.message).asScala
+    val links = linkSpans.map(linkSpan => sms.message.substring(linkSpan.getBeginIndex, linkSpan.getEndIndex))
+    links.forall(checkIfURLIsSafe)
+  }
+
+  def checkIfURLIsSafe(url: String): Boolean = {
+    !url.contains("m-bonk")
   }
 
   def main(args: Array[String]): Unit = {
@@ -35,12 +48,19 @@ object Main {
       while (true) {
         val records = consumer.poll(Duration.ofMillis(100))
         records.forEach { record =>
-          val inputValue = record.value()
-          val outputValue = process(inputValue)
-
-          val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), outputValue)
-          println("sending output record to sms-output")
-          producer.send(outputRecord)
+          decode[SMS](record.value()) match {
+            case Left(error) => println(s"Error: $error")
+            case Right(sms) =>
+              val smsIsSafe = checkIfSMSIsSafe(sms)
+              val topic = if (smsIsSafe) {
+                "sms-output"
+              } else {
+                "sms-rejected"
+              }
+              val outputRecord = new ProducerRecord[String, String](topic, record.key(), record.value())
+              println(s"sending output record to $topic")
+              producer.send(outputRecord)
+          }
         }
       }
     } catch {

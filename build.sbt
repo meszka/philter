@@ -10,3 +10,20 @@ lazy val root = (project in file("."))
 libraryDependencies ++= Seq(
   "org.apache.kafka" % "kafka-clients" % "4.1.1"
 )
+
+val circeVersion = "0.14.15"
+
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
+
+libraryDependencies += "org.nibor.autolink" % "autolink" % "0.12.0"
+
+assembly / assemblyMergeStrategy := {
+  case "module-info.class" =>
+    MergeStrategy.discard
+  case other =>
+    (assembly / assemblyMergeStrategy).value(other)
+}
