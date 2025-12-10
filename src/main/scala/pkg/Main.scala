@@ -84,6 +84,8 @@ object Main {
           decode[SMS](record.value()) match {
             case Left(error) => println(s"Error: $error")
             case Right(sms) =>
+              // TODO: handle START/STOP messages
+              // TODO: check if client opted in
               checkIfSMSIsSafe(sms).map { smsIsSafe =>
                 val topic = if (smsIsSafe) {
                   "sms-output"
