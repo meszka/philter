@@ -6,6 +6,43 @@ docker compose up -d
 
 Uwaga: po uruchomieniu główna aplikacja (scala-app) czeka 30s na pełne uruchomienie się Cassandry.
 
+# Konfiguracja
+
+Aplikacja przyjmuje ustawienia w formie zmiennych środowiskowych. Można zmienić ich wartości w pliku `docker-compose.yml`:
+
+- `GOOGLE_API_KEY` - klucz API dla usługi `https://cloud.google.com/web-risk/docs/reference/rest/v1eap1/TopLevel/evaluateUri`. Domyślna wartość `fake` powoduje, że używana jest aatrapa - aplikacja podczas weryfikacji adresu czeka 1s i uznaje adres za niebezpieczny jeśli zawiera ciąg znaków `m-bonk`
+- `URL_CACHE_TTL_SECONDS` - TTL dla cache-a sprawdzonych adresów w sekundach (domyślnie 24h)
+
+# Testowanie
+
+Na ten moment brakuje zestawu testów automatycznych, ale można przetestować rozwiązanie korzystając ze skryptów Kafki:
+
+## Włączenie usługi
+```
+cat start.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+```
+
+## Przykładowe SMS-y do filtrowania
+
+```
+cat example-sms.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+```
+
+## Wyłączenie usługi
+```
+cat stop.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+```
+
+## Podejrzenie SMS-ów do dostarczenia
+```
+docker compose exec -ti kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic sms-output
+```
+
+## Podejrzenie odrzuconych SMS-ów
+```
+docker compose exec -ti kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic sms-rejected
+```
+
 # Architektura i założenia
 
 Rozwiązanie ma filtrować SMS-y dla wszystkich chętnych użytkowników sieci.
@@ -34,12 +71,13 @@ uniknięcia niepotrzebnych opłat.
 
 ### Dlaczego Cassandra?
 
-Poza wspomnianą już skalowalnością do wielu węzłów, ważne jest, żeby informacja o włączeniu/wyłączeniu usługi nie
-zginęła, nawet w przypadku awarii jednego z węzłów (przynajmniej po tym, jak użytkownik otrzyma potwierdzenie).
-Dlatego podczas zapisu
-używany jest tryb spójności "quorum". Ważne jest też, żeby informacja ta była dostępna dla
-wszystkich instancji aplikacji, ale aktualizacje nie muszą być natychmiast
-widoczne dla każdej instancji ("eventual consistency" jest akceptowalne).
+Poza wspomnianą już skalowalnością do wielu węzłów, ważne jest, żeby informacja
+o włączeniu/wyłączeniu usługi nie ginęła, nawet w przypadku awarii jednego z
+węzłów (przynajmniej po tym, jak użytkownik otrzyma potwierdzenie). Dlatego
+podczas zapisu używany jest tryb spójności "quorum". Ważne jest też, żeby
+informacja ta była dostępna dla wszystkich instancji aplikacji, ale
+aktualizacje nie muszą być natychmiast widoczne dla każdej instancji ("eventual
+consistency" jest akceptowalne).
 
 Cache trzymany jest w Cassandrze "przy okazji". Dla cache-a utrata zapisu w przypadku
 awarii nie jest dużym problemem. Wspólny cache dla wszystkich instancji
