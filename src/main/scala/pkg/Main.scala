@@ -23,6 +23,9 @@ object Main extends MyDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber = "123"
 
+  println("Waiting for casandra...")
+  Thread.sleep(30000)
+  println("Done waiting")
   Await.result(
     db.clientOptedIn.create.ifNotExists().future(),
     10.seconds
