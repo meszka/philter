@@ -36,9 +36,15 @@ services:
 
       echo 'Topics created.'
       "
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
   scala-app:
     build: .
     depends_on:
       - kafka
+      - cassandra
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      CASSANDRA_HOST: cassandra

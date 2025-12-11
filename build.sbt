@@ -29,3 +29,9 @@ assembly / assemblyMergeStrategy := {
 }
 
 libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.13"
+
+libraryDependencies ++= Seq(
+  "com.outworkers" %% "phantom-dsl" % "2.59.0",
+  "com.outworkers" %% "phantom-connectors" % "2.59.0",
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value
+)

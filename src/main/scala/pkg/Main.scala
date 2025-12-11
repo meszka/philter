@@ -1,3 +1,5 @@
+import com.outworkers.phantom.dsl.{CreateQueryOps, context}
+
 import java.time.Duration
 import java.util.Properties
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
@@ -6,22 +8,28 @@ import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializ
 import org.nibor.autolink.{LinkExtractor, LinkType}
 import sttp.client4.{Backend, DefaultFutureBackend, Response, UriContext, quickRequest}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import pkg.{SMS, WebriskBody, WebriskResponse}
+import pkg.{MyDBProvider, SMS, WebriskBody, WebriskResponse}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
-object Main {
+object Main extends MyDBProvider {
   val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
   val sttpBackend: Backend[Future] = DefaultFutureBackend()
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
+  val optInNumber = "123"
+
+  Await.result(
+    db.clientOptedIn.create.ifNotExists().future(),
+    10.seconds
+  )
 
   def checkIfSMSIsSafe(sms: SMS): Future[Boolean] = {
+    println("checking if sms is safe")
     val linkSpans = linkExtractor.extractLinks(sms.message).asScala
     val links = linkSpans.map(linkSpan => sms.message.substring(linkSpan.getBeginIndex, linkSpan.getEndIndex))
     val checks = Future.sequence(links.map(checkIfURLIsSafe))
@@ -84,17 +92,33 @@ object Main {
           decode[SMS](record.value()) match {
             case Left(error) => println(s"Error: $error")
             case Right(sms) =>
-              // TODO: handle START/STOP messages
-              // TODO: check if client opted in
-              checkIfSMSIsSafe(sms).map { smsIsSafe =>
-                val topic = if (smsIsSafe) {
-                  "sms-output"
-                } else {
-                  "sms-rejected"
+              if (sms.recipient == optInNumber && sms.message == "START") {
+                db.clientOptedIn.add(sms.sender).map { _ =>
+                  val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
+                  println(s"sending output record to sms-output")
+                  producer.send(outputRecord)
                 }
-                val outputRecord = new ProducerRecord[String, String](topic, record.key(), record.value())
-                println(s"sending output record to $topic")
-                producer.send(outputRecord)
+              } else if (sms.recipient == optInNumber && sms.message == "STOP") {
+                db.clientOptedIn.remove(sms.sender).map { _ =>
+                  val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
+                  println(s"sending output record to sms-output")
+                  producer.send(outputRecord)
+                }
+              } else {
+                val acceptSMSF = db.clientOptedIn.get(sms.sender).map(_.isDefined).flatMap {
+                  case true => checkIfSMSIsSafe(sms)
+                  case false => Future.successful(true)
+                }
+                acceptSMSF.map { acceptSMS =>
+                  val topic = if (acceptSMS) {
+                    "sms-output"
+                  } else {
+                    "sms-rejected"
+                  }
+                  val outputRecord = new ProducerRecord[String, String](topic, record.key(), record.value())
+                  println(s"sending output record to $topic")
+                  producer.send(outputRecord)
+                }
               }
           }
         }
