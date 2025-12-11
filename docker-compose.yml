@@ -44,7 +44,7 @@ services:
       CASSANDRA_LISTEN_ADDRESS: cassandra
       CASSANDRA_BROADCAST_ADDRESS: cassandra
   scala-app:
-    build: .
+    image: meszka/sms-phishing-filter:latest
     depends_on:
       - kafka
       - cassandra
