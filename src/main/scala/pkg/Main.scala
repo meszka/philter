@@ -37,11 +37,17 @@ object Main extends MyDBProvider {
   }
 
   def checkIfURLIsSafe(url: String): Future[Option[Boolean]] = {
-    if (googleApiKey == "fake") {
-      checkIfURLIsSafeReal(url)
-    } else {
-      checkIfURLIsSafeFake(url)
+    val isSafeOptF = db.urlIsSafe.get(url).flatMap {
+      case Some(isSafe) => Future.successful(Some(isSafe))
+      case None =>
+        if (googleApiKey == "fake") {
+          checkIfURLIsSafeReal(url)
+        } else {
+          checkIfURLIsSafeFake(url)
+        }
     }
+    isSafeOptF.foreach(_.foreach(isSafe => db.urlIsSafe.add(url, isSafe)))
+    isSafeOptF
   }
 
   def checkIfURLIsSafeReal(url: String): Future[Option[Boolean]] = {
