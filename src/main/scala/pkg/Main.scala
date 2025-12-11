@@ -98,17 +98,21 @@ object Main extends MyDBProvider {
           decode[SMS](record.value()) match {
             case Left(error) => println(s"Error: $error")
             case Right(sms) =>
-              if (sms.recipient == optInNumber && sms.message == "START") {
-                db.clientOptedIn.add(sms.sender).map { _ =>
-                  val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
-                  println(s"sending output record to sms-output")
-                  producer.send(outputRecord)
-                }
-              } else if (sms.recipient == optInNumber && sms.message == "STOP") {
-                db.clientOptedIn.remove(sms.sender).map { _ =>
-                  val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
-                  println(s"sending output record to sms-output")
-                  producer.send(outputRecord)
+              if (sms.recipient == optInNumber) {
+                if (sms.message == "START") {
+                  db.clientOptedIn.add(sms.sender).map { _ =>
+                    val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
+                    println(s"sending output record to sms-output")
+                    producer.send(outputRecord)
+                    // TODO: send ACK SMS
+                  }
+                } else if (sms.message == "STOP") {
+                  db.clientOptedIn.remove(sms.sender).map { _ =>
+                    val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
+                    println(s"sending output record to sms-output")
+                    producer.send(outputRecord)
+                    // TODO: send ACK SMS
+                  }
                 }
               } else {
                 val acceptSMSF = db.clientOptedIn.exists(sms.sender).flatMap {
