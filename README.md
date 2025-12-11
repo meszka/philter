@@ -83,6 +83,11 @@ consistency" jest akceptowalne).
 
 Cache trzymany jest w Cassandrze "przy okazji". Dla cache-a utrata zapisu w przypadku
 awarii nie jest dużym problemem. Wspólny cache dla wszystkich instancji
-aplikacji jest plusem, ale też nie jest niezbędny.  Dlatego w przypadku cache-a
+aplikacji jest plusem, ale też nie jest niezbędny. Dlatego w przypadku cache-a
 możnaby zastosować też inne rozwiązanie, np. Redis (z replikacją lub bez).
+
+# Możliwe usprawnienia
+
+Przydałby się mechanizm ponawiania zapytania do usługi weryfikującej bezpieczeństwo linków.
+W tej chwili w przypadku niepowodzenia, link jest uznawany za bezpieczny (ale nie trafia do cache-a).
 
