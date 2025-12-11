@@ -53,3 +53,4 @@ services:
       CASSANDRA_HOST: cassandra
       GOOGLE_API_KEY: fake
       URL_CACHE_TTL_SECONDS: 86400
+      OPT_IN_NUMBER: 123

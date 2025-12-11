@@ -12,6 +12,7 @@ Aplikacja przyjmuje ustawienia w formie zmiennych środowiskowych. Można zmieni
 
 - `GOOGLE_API_KEY` - klucz API dla usługi `https://cloud.google.com/web-risk/docs/reference/rest/v1eap1/TopLevel/evaluateUri`. Domyślna wartość `fake` powoduje, że używana jest aatrapa - aplikacja podczas weryfikacji adresu czeka 1s i uznaje adres za niebezpieczny jeśli zawiera ciąg znaków `m-bonk`
 - `URL_CACHE_TTL_SECONDS` - TTL dla cache-a sprawdzonych adresów w sekundach (domyślnie 24h)
+- `OPT_IN_NUMBER` - numer na który klient wysyła wiadomość `START` lub `STOP`
 
 # Testowanie
 

@@ -21,7 +21,7 @@ object Main extends MyDBProvider {
   val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
   val sttpBackend: Backend[Future] = DefaultFutureBackend()
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
-  val optInNumber = "123"
+  val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
 
   println("Waiting for casandra...")
   Thread.sleep(30000)
