@@ -18,10 +18,12 @@ abstract class ClientOptedInTable extends Table[ClientOptedInTable, ClientOptedI
   def add(clientId: String): Future[ResultSet] =
     insert
       .value(_.client, clientId)
+      .consistencyLevel_=(ConsistencyLevel.QUORUM)
       .future()
 
   def remove(clientId: String): Future[ResultSet] =
     delete
       .where(_.client eqs clientId)
+      .consistencyLevel_=(ConsistencyLevel.QUORUM)
       .future()
 }
