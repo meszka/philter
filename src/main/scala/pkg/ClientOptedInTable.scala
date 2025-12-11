@@ -9,8 +9,11 @@ abstract class ClientOptedInTable extends Table[ClientOptedInTable, ClientOptedI
 
   object client extends StringColumn with PartitionKey
 
-  def get(clientId: String): Future[Option[ClientOptedIn]] =
-    select.where(_.client eqs clientId).one()
+  def exists(clientId: String): Future[Boolean] =
+    select
+      .where(_.client eqs clientId)
+      .one()
+      .map(_.isDefined)
 
   def add(clientId: String): Future[ResultSet] =
     insert

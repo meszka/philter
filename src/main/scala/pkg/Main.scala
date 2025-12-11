@@ -111,7 +111,7 @@ object Main extends MyDBProvider {
                   producer.send(outputRecord)
                 }
               } else {
-                val acceptSMSF = db.clientOptedIn.get(sms.sender).map(_.isDefined).flatMap {
+                val acceptSMSF = db.clientOptedIn.exists(sms.sender).flatMap {
                   case true => checkIfSMSIsSafe(sms)
                   case false => Future.successful(true)
                 }
