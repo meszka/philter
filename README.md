@@ -16,32 +16,33 @@ Aplikacja przyjmuje ustawienia w formie zmiennych środowiskowych. Można zmieni
 
 # Testowanie
 
-Na ten moment brakuje zestawu testów automatycznych, ale można przetestować rozwiązanie korzystając ze skryptów Kafki:
+Na ten moment brakuje zestawu testów automatycznych, ale można przetestować rozwiązanie korzystając ze skryptów Kafka
+(po uprzednim pobraniu i rozpakowaniu):
 
 ## Włączenie usługi
 ```
-cat start.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+cat start.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
 ## Przykładowe SMS-y do filtrowania
 
 ```
-cat example-sms.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+cat example-sms.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
 ## Wyłączenie usługi
 ```
-cat stop.jsonl | docker compose exec -ti kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic sms-input
+cat stop.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
 ## Podejrzenie SMS-ów do dostarczenia
 ```
-docker compose exec -ti kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic sms-output
+~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-output
 ```
 
 ## Podejrzenie odrzuconych SMS-ów
 ```
-docker compose exec -ti kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic sms-rejected
+~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-rejected
 ```
 
 # Architektura i założenia
