@@ -107,14 +107,18 @@ object Main extends MyDBProvider {
                     val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
                     println(s"sending output record to sms-output")
                     producer.send(outputRecord)
-                    // TODO: send ACK SMS
+                    val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu włączona")
+                    val ackRecord = new ProducerRecord[String, String]("sms-output", ackSMS.asJson.noSpaces)
+                    producer.send(ackRecord)
                   }
                 } else if (sms.message == "STOP") {
                   db.clientOptedIn.remove(sms.sender).map { _ =>
                     val outputRecord = new ProducerRecord[String, String]("sms-output", record.key(), record.value())
                     println(s"sending output record to sms-output")
                     producer.send(outputRecord)
-                    // TODO: send ACK SMS
+                    val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu wyłączona")
+                    val ackRecord = new ProducerRecord[String, String]("sms-output", ackSMS.asJson.noSpaces)
+                    producer.send(ackRecord)
                   }
                 }
               } else {
