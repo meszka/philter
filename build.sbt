@@ -24,6 +24,10 @@ libraryDependencies += "org.nibor.autolink" % "autolink" % "0.12.0"
 assembly / assemblyMergeStrategy := {
   case "module-info.class" =>
     MergeStrategy.discard
+  case PathList("META-INF", "io.netty.versions.properties") =>
+    MergeStrategy.first
+  case PathList("META-INF", xs @ _*) =>
+    MergeStrategy.discard
   case other =>
     (assembly / assemblyMergeStrategy).value(other)
 }
