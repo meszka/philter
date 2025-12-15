@@ -8,7 +8,7 @@ import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializ
 import org.nibor.autolink.{LinkExtractor, LinkType}
 import sttp.client4.{Backend, DefaultFutureBackend, Response, UriContext, quickRequest}
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
@@ -93,30 +93,30 @@ object Main extends MyDBProvider {
 
   val producer = new KafkaProducer[String, String](producerProps)
 
-  def handleOptIn(sms: SMS): Future[Unit] = {
+  def handleOptIn(sms: SMS): Future[RecordMetadata] = {
     if (sms.message == "START") {
-      db.clientOptedIn.add(sms.sender).map { _ =>
+      db.clientOptedIn.add(sms.sender).flatMap { _ =>
         sendSMSToTopic(sms, "sms-output")
         val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu włączona")
         sendSMSToTopic(ackSMS, "sms-output")
       }
     } else if (sms.message == "STOP") {
-      db.clientOptedIn.remove(sms.sender).map { _ =>
+      db.clientOptedIn.remove(sms.sender).flatMap { _ =>
         sendSMSToTopic(sms, "sms-output")
         val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu wyłączona")
         sendSMSToTopic(ackSMS, "sms-output")
       }
     } else {
-      Future.successful()
+      sendSMSToTopic(sms, "sms-output")
     }
   }
 
-  def handleRegularSMS(sms: SMS): Future[Unit] = {
+  def handleRegularSMS(sms: SMS): Future[RecordMetadata] = {
     val acceptSMSF = db.clientOptedIn.exists(sms.sender).flatMap {
       case true => checkIfSMSIsSafe(sms)
       case false => Future.successful(true)
     }
-    acceptSMSF.map { acceptSMS =>
+    acceptSMSF.flatMap { acceptSMS =>
       val topic = if (acceptSMS) {
         "sms-output"
       } else {
@@ -127,11 +127,17 @@ object Main extends MyDBProvider {
   }
 
   def sendSMSToTopic(sms: SMS, topic: String): Future[RecordMetadata] = {
+    val promise = Promise[RecordMetadata]()
     println(s"sending $sms to $topic")
     val outputRecord = new ProducerRecord[String, String]("sms-output", sms.asJson.noSpaces)
-    Future {
-      producer.send(outputRecord).get()
-    }
+    producer.send(outputRecord, (metadata, exception) => {
+      if (exception != null) {
+        promise.failure(exception)
+      } else {
+        promise.success(metadata)
+      }
+    })
+    promise.future
   }
 
   def main(args: Array[String]): Unit = {
