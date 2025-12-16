@@ -16,31 +16,39 @@ Aplikacja przyjmuje ustawienia w formie zmiennych środowiskowych. Można zmieni
 
 # Testowanie
 
-Na ten moment brakuje zestawu testów automatycznych, ale można przetestować rozwiązanie korzystając ze skryptów Kafka
-(po uprzednim pobraniu i rozpakowaniu):
+## Testy jednostkowe
 
-## Włączenie usługi
+```
+sbt test
+```
+
+
+## Ręczne testowanie integracyjne
+
+Można przetestować rozwiązanie korzystając ze skryptów Kafka (po uprzednim pobraniu i rozpakowaniu):
+
+### Włączenie usługi
 ```
 cat start.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
-## Przykładowe SMS-y do filtrowania
+### Przykładowe SMS-y do filtrowania
 
 ```
 cat example-sms.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
-## Wyłączenie usługi
+### Wyłączenie usługi
 ```
 cat stop.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic sms-input
 ```
 
-## Podejrzenie SMS-ów do dostarczenia
+### Podejrzenie SMS-ów do dostarczenia
 ```
 ~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-output --from-beginning
 ```
 
-## Podejrzenie odrzuconych SMS-ów
+### Podejrzenie odrzuconych SMS-ów
 ```
 ~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-rejected --from-beginning
 ```
