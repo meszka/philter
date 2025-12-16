@@ -8,13 +8,11 @@ import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters.{IterableHasAsScala, SeqHasAsJava}
 import io.circe.parser.decode
 import pkg.db.PhilterDBProvider
-
-import scala.util.{Failure, Success}
 
 object Main extends App with PhilterDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
@@ -48,20 +46,21 @@ object Main extends App with PhilterDBProvider {
 
   consumer.subscribe(List("sms-input").asJava)
 
+  val timeout = scala.concurrent.duration.Duration(10, scala.concurrent.duration.MINUTES)
+
   try {
     while (true) {
       val records = consumer.poll(Duration.ofMillis(100))
-      records.forEach { record =>
+      val futures = records.asScala.map { record =>
         decode[SMS](record.value()) match {
           case Left(error) =>
             println(s"Error decoding SMS: $error")
+            Future(())
           case Right(sms) =>
-            smsHandler.handle(sms).onComplete {
-              case Failure(e) => println(s"Error handling SMS: ${e.getMessage}")
-              case _ =>
-            }
+            smsHandler.handle(sms)
         }
       }
+      Await.result(Future.sequence(futures), timeout)
     }
   } catch {
     case _: InterruptedException => println("Shutting down...")
