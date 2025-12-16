@@ -4,20 +4,20 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import pkg._
-import pkg.db.{ClientOptedInTable, MyDB, UrlIsSafeTable}
+import pkg.db.{ClientOptedInTable, PhilterDB, UrlIsSafeTable}
 
 import scala.concurrent.Future
 
 class SMSHandlerTest extends AsyncFlatSpec with Matchers {
-  val myDBMock: MyDB = new MyDB {
+  val dbMock: PhilterDB = new PhilterDB {
     override val clientOptedIn: ClientOptedInTable = mock[ClientOptedInTable]
     override val urlIsSafe: UrlIsSafeTable = mock[UrlIsSafeTable]
   }
 
-  when(myDBMock.clientOptedIn.exists("222")).thenReturn(Future.successful(true))
-  when(myDBMock.clientOptedIn.exists("333")).thenReturn(Future.successful(false))
-  when(myDBMock.clientOptedIn.add(any[String])).thenReturn(Future.successful(()))
-  when(myDBMock.clientOptedIn.remove(any[String])).thenReturn(Future.successful(()))
+  when(dbMock.clientOptedIn.exists("222")).thenReturn(Future.successful(true))
+  when(dbMock.clientOptedIn.exists("333")).thenReturn(Future.successful(false))
+  when(dbMock.clientOptedIn.add(any[String])).thenReturn(Future.successful(()))
+  when(dbMock.clientOptedIn.remove(any[String])).thenReturn(Future.successful(()))
 
   val smsCheckerMock = mock[SMSChecker]
   val safeSMS = SMS("111", "222", "Zwykły SMS")
@@ -29,7 +29,7 @@ class SMSHandlerTest extends AsyncFlatSpec with Matchers {
   when(smsProducerMock.sendSMSToTopic(any[SMS], any[String])).thenReturn(Future.successful(()))
 
   val optInNumber = "123"
-  val smsHandler = new SMSHandler(myDBMock, smsProducerMock, smsCheckerMock, optInNumber)
+  val smsHandler = new SMSHandler(dbMock, smsProducerMock, smsCheckerMock, optInNumber)
 
   "handle" should "for an opted-in recipient, send a safe sms to sms-output" in {
     val future = smsHandler.handle(safeSMS)
@@ -60,7 +60,7 @@ class SMSHandlerTest extends AsyncFlatSpec with Matchers {
     val startSMS = SMS("444", optInNumber, "START")
     val future = smsHandler.handle(startSMS)
     future.map { _ =>
-      verify(myDBMock.clientOptedIn).add("444")
+      verify(dbMock.clientOptedIn).add("444")
       verify(smsProducerMock).sendSMSToTopic(startSMS, "sms-output")
       verify(smsProducerMock).sendSMSToTopic(SMS(optInNumber, "444", smsHandler.optInConfirmationMessage), "sms-output")
       succeed
@@ -71,7 +71,7 @@ class SMSHandlerTest extends AsyncFlatSpec with Matchers {
     val stopSMS = SMS("444", optInNumber, "STOP")
     val future = smsHandler.handle(stopSMS)
     future.map { _ =>
-      verify(myDBMock.clientOptedIn).remove("444")
+      verify(dbMock.clientOptedIn).remove("444")
       verify(smsProducerMock).sendSMSToTopic(stopSMS, "sms-output")
       verify(smsProducerMock).sendSMSToTopic(SMS(optInNumber, "444", smsHandler.optOutConfirmationMessage), "sms-output")
       succeed

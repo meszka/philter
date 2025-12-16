@@ -3,27 +3,27 @@ import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
-import pkg.db.{ClientOptedInTable, MyDB, UrlIsSafeTable}
+import pkg.db.{ClientOptedInTable, PhilterDB, UrlIsSafeTable}
 import pkg.{LinkChecker, SMS, SMSChecker}
 
 import scala.concurrent.Future
 
 class SMSCheckerTest extends AsyncFlatSpec with Matchers {
-  val myDBMock: MyDB = new MyDB {
+  val dbMock: PhilterDB = new PhilterDB {
     override val clientOptedIn: ClientOptedInTable = mock[ClientOptedInTable]
     override val urlIsSafe: UrlIsSafeTable = mock[UrlIsSafeTable]
   }
-  when(myDBMock.urlIsSafe.get("https://www.m-bonk.pl/straszne/rzeczy")).thenReturn(Future.successful(None))
-  when(myDBMock.urlIsSafe.get("https://en.wikipedia.org")).thenReturn(Future.successful(None))
-  when(myDBMock.urlIsSafe.get("https://duckduckgo.com")).thenReturn(Future.successful(Some(true)))
-  when(myDBMock.urlIsSafe.get("https://www.m-bonk.pl/znane/rzeczy")).thenReturn(Future.successful(Some(false)))
-  when(myDBMock.urlIsSafe.add(any[String], any[Boolean])).thenReturn(Future.successful(()))
+  when(dbMock.urlIsSafe.get("https://www.m-bonk.pl/straszne/rzeczy")).thenReturn(Future.successful(None))
+  when(dbMock.urlIsSafe.get("https://en.wikipedia.org")).thenReturn(Future.successful(None))
+  when(dbMock.urlIsSafe.get("https://duckduckgo.com")).thenReturn(Future.successful(Some(true)))
+  when(dbMock.urlIsSafe.get("https://www.m-bonk.pl/znane/rzeczy")).thenReturn(Future.successful(Some(false)))
+  when(dbMock.urlIsSafe.add(any[String], any[Boolean])).thenReturn(Future.successful(()))
 
   val linkCheckerMock: LinkChecker = mock[LinkChecker]
   when(linkCheckerMock.checkIfUrlIsSafe("https://www.m-bonk.pl/straszne/rzeczy")).thenReturn(Future.successful(Some(false)))
   when(linkCheckerMock.checkIfUrlIsSafe("https://en.wikipedia.org")).thenReturn(Future.successful(Some(true)))
 
-  val smsChecker = new SMSChecker(myDBMock, linkCheckerMock)
+  val smsChecker = new SMSChecker(dbMock, linkCheckerMock)
 
   "checkIfSMSIsSafe" should "return true for an SMS without a link" in {
     val sms = SMS("111", "222", "Wiadomość bez linku")
@@ -35,7 +35,7 @@ class SMSCheckerTest extends AsyncFlatSpec with Matchers {
     val resultF = smsChecker.checkIfSMSIsSafe(sms)
     resultF.map { result =>
       verify(linkCheckerMock).checkIfUrlIsSafe("https://www.m-bonk.pl/straszne/rzeczy")
-      verify(myDBMock.urlIsSafe).add("https://www.m-bonk.pl/straszne/rzeczy", false)
+      verify(dbMock.urlIsSafe).add("https://www.m-bonk.pl/straszne/rzeczy", false)
       result should be (false)
     }
   }
@@ -45,7 +45,7 @@ class SMSCheckerTest extends AsyncFlatSpec with Matchers {
     val resultF = smsChecker.checkIfSMSIsSafe(sms)
     resultF.map { result =>
       verify(linkCheckerMock).checkIfUrlIsSafe("https://en.wikipedia.org")
-      verify(myDBMock.urlIsSafe).add("https://en.wikipedia.org", true)
+      verify(dbMock.urlIsSafe).add("https://en.wikipedia.org", true)
       result should be (true)
     }
   }
@@ -55,7 +55,7 @@ class SMSCheckerTest extends AsyncFlatSpec with Matchers {
     val resultF = smsChecker.checkIfSMSIsSafe(sms)
     resultF.map { result =>
       verify(linkCheckerMock, times(0)).checkIfUrlIsSafe("https://duckduckgo.com")
-      verify(myDBMock.urlIsSafe).add("https://duckduckgo.com", true)
+      verify(dbMock.urlIsSafe).add("https://duckduckgo.com", true)
       result should be (true)
     }
   }
@@ -65,7 +65,7 @@ class SMSCheckerTest extends AsyncFlatSpec with Matchers {
     val resultF = smsChecker.checkIfSMSIsSafe(sms)
     resultF.map { result =>
       verify(linkCheckerMock, times(0)).checkIfUrlIsSafe("https://www.m-bonk.pl/znane/rzeczy")
-      verify(myDBMock.urlIsSafe).add("https://www.m-bonk.pl/znane/rzeczy", false)
+      verify(dbMock.urlIsSafe).add("https://www.m-bonk.pl/znane/rzeczy", false)
       result should be (false)
     }
   }

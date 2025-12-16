@@ -1,6 +1,6 @@
 package pkg.db
 
-trait MyDB {
+trait PhilterDB {
   val clientOptedIn: ClientOptedInTable
   val urlIsSafe: UrlIsSafeTable
 }

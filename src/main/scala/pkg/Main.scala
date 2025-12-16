@@ -12,18 +12,18 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import io.circe.parser.decode
-import pkg.db.MyDBProvider
+import pkg.db.PhilterDBProvider
 
 import scala.util.{Failure, Success}
 
-object Main extends App with MyDBProvider {
+object Main extends App with PhilterDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
   val bootstrapServers = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
   val consumerProps = new Properties()
   consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
-  consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "sms-phishing-filter-consumer-group")
+  consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "philter-consumer-group")
   consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")

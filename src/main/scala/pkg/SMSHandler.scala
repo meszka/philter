@@ -1,11 +1,11 @@
 package pkg
 
-import pkg.db.MyDB
+import pkg.db.PhilterDB
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SMSHandler(db: MyDB, smsProducer: SMSProducer, smsChecker: SMSChecker, optInNumber: String) {
+class SMSHandler(db: PhilterDB, smsProducer: SMSProducer, smsChecker: SMSChecker, optInNumber: String) {
   val optInConfirmationMessage = "Usługa filtrowania phishingu włączona"
   val optOutConfirmationMessage = "Usługa filtrowania phishingu wyłączona"
 

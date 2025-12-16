@@ -2,5 +2,5 @@
 set -e
 
 sbt compile assembly
-docker build -t meszka/sms-phishing-filter .
+docker build -t meszka/philter .
 docker compose up -d --force-recreate

@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "2.13.18"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "sms-phishing-filter"
+    name := "philter"
   )
 
 libraryDependencies ++= Seq(

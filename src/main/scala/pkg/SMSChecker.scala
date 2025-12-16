@@ -1,13 +1,13 @@
 package pkg
 
 import org.nibor.autolink.{LinkExtractor, LinkType}
-import pkg.db.MyDB
+import pkg.db.PhilterDB
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.{IterableHasAsScala, SetHasAsJava}
 
-class SMSChecker(db: MyDB, linkChecker: LinkChecker) {
+class SMSChecker(db: PhilterDB, linkChecker: LinkChecker) {
   val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
 
   def checkIfSMSIsSafe(sms: SMS): Future[Boolean] = {
