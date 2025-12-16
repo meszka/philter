@@ -19,18 +19,6 @@ import scala.util.{Failure, Success}
 object Main extends App with MyDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
-
-  println("Waiting for casandra...")
-  Thread.sleep(30000)
-  println("Done waiting")
-  Await.result(
-    db.clientOptedIn.create.ifNotExists().future(),
-    10.seconds
-  )
-
-  val linkChecker = new LinkChecker(googleApiKey)
-  val smsChecker = new SMSChecker(db, linkChecker)
-
   val bootstrapServers = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
   val consumerProps = new Properties()
@@ -41,17 +29,27 @@ object Main extends App with MyDBProvider {
   consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
   consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
 
-  val consumer = new KafkaConsumer[String, String](consumerProps)
-  consumer.subscribe(List("sms-input").asJava)
-
   val producerProps = new Properties()
   producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
   producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
   producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
 
+  val linkChecker = new LinkChecker(googleApiKey)
+  val smsChecker = new SMSChecker(db, linkChecker)
+  val consumer = new KafkaConsumer[String, String](consumerProps)
   val producer = new KafkaProducer[String, String](producerProps)
   val smsProducer = new SMSProducer(producer)
   val smsHandler = new SMSHandler(db, smsProducer, smsChecker, optInNumber)
+
+  println("Waiting for casandra...")
+  Thread.sleep(30000)
+  println("Done waiting")
+  Await.result(
+    db.clientOptedIn.create.ifNotExists().future(),
+    10.seconds
+  )
+
+  consumer.subscribe(List("sms-input").asJava)
 
   try {
     while (true) {
