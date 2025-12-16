@@ -27,7 +27,6 @@ object Main extends App with PhilterDBProvider {
   consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
-  consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
 
   val producerProps = new Properties()
   producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
@@ -58,10 +57,8 @@ object Main extends App with PhilterDBProvider {
         decode[SMS](record.value()) match {
           case Left(error) =>
             println(s"Error decoding SMS: $error")
-            consumer.commitAsync()
           case Right(sms) =>
             smsHandler.handle(sms).onComplete {
-              case Success(()) => consumer.commitAsync()
               case Failure(e) => println(s"Error handling SMS: ${e.getMessage}")
             }
         }
