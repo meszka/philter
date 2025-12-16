@@ -37,12 +37,12 @@ cat stop.jsonl | ~/kafka_2.13-4.1.1/bin/kafka-console-producer.sh --bootstrap-se
 
 ## Podejrzenie SMS-ów do dostarczenia
 ```
-~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-output
+~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-output --from-beginning
 ```
 
 ## Podejrzenie odrzuconych SMS-ów
 ```
-~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-rejected
+~/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sms-rejected --from-beginning
 ```
 
 # Architektura i założenia
