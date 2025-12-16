@@ -2,6 +2,7 @@ package pkg
 
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
+import pkg.webrisk.{WebriskBody, WebriskResponse}
 import sttp.client4.{Backend, DefaultFutureBackend, Response, UriContext, quickRequest}
 
 import scala.concurrent.ExecutionContext.Implicits.global

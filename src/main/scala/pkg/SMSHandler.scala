@@ -1,5 +1,7 @@
 package pkg
 
+import pkg.db.MyDB
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

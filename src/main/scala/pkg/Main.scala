@@ -5,13 +5,14 @@ import com.outworkers.phantom.dsl.{CreateQueryOps, context}
 import java.time.Duration
 import java.util.Properties
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import io.circe.parser.decode
+import pkg.db.MyDBProvider
 
 import scala.util.{Failure, Success}
 

@@ -3,7 +3,8 @@ import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
-import pkg.{ClientOptedInTable, LinkChecker, MyDB, SMS, SMSChecker, UrlIsSafeTable}
+import pkg.db.{ClientOptedInTable, MyDB, UrlIsSafeTable}
+import pkg.{LinkChecker, SMS, SMSChecker}
 
 import scala.concurrent.Future
 

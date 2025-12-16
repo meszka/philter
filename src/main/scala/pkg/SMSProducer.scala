@@ -1,7 +1,7 @@
 package pkg
 
 import io.circe.syntax.EncoderOps
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 
 import scala.concurrent.{Future, Promise}
 

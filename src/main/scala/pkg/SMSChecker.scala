@@ -1,6 +1,7 @@
 package pkg
 
 import org.nibor.autolink.{LinkExtractor, LinkType}
+import pkg.db.MyDB
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

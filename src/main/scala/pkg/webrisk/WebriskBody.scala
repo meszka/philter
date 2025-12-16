@@ -1,4 +1,4 @@
-package pkg
+package pkg.webrisk
 
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder

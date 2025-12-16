@@ -1,9 +1,10 @@
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import pkg._
+import pkg.db.{ClientOptedInTable, MyDB, UrlIsSafeTable}
 
 import scala.concurrent.Future
 

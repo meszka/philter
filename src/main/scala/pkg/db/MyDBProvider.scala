@@ -1,4 +1,4 @@
-package pkg
+package pkg.db
 
 import com.outworkers.phantom.connectors.ContactPoint
 import com.outworkers.phantom.dsl.{CassandraConnection, DatabaseProvider}

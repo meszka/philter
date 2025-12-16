@@ -1,4 +1,4 @@
-package pkg
+package pkg.db
 
 import com.outworkers.phantom.dsl._
 
