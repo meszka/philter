@@ -46,7 +46,7 @@ object Main extends App with PhilterDBProvider {
 
   consumer.subscribe(List("sms-input").asJava)
 
-  val timeout = scala.concurrent.duration.Duration(10, scala.concurrent.duration.MINUTES)
+  val timeout = 10.minutes
 
   try {
     while (true) {
