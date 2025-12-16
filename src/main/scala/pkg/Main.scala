@@ -1,3 +1,5 @@
+package pkg
+
 import com.outworkers.phantom.dsl.{CreateQueryOps, context}
 
 import java.time.Duration
@@ -6,14 +8,12 @@ import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import io.circe.parser.decode
-import io.circe.syntax.EncoderOps
-import pkg.{LinkChecker, MyDBProvider, SMS, SMSChecker}
 
-object Main extends MyDBProvider {
+object Main extends App with MyDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
 
@@ -46,75 +46,23 @@ object Main extends MyDBProvider {
   producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
 
   val producer = new KafkaProducer[String, String](producerProps)
+  val smsProducer = new SMSProducer(producer)
+  val smsHandler = new SMSHandler(db, smsProducer, smsChecker, optInNumber)
 
-  def handleOptIn(sms: SMS): Future[RecordMetadata] = {
-    if (sms.message == "START") {
-      db.clientOptedIn.add(sms.sender).flatMap { _ =>
-        sendSMSToTopic(sms, "sms-output")
-        val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu włączona")
-        sendSMSToTopic(ackSMS, "sms-output")
-      }
-    } else if (sms.message == "STOP") {
-      db.clientOptedIn.remove(sms.sender).flatMap { _ =>
-        sendSMSToTopic(sms, "sms-output")
-        val ackSMS = SMS(sender = optInNumber, recipient = sms.sender, message = "Usługa filtrowania phishingu wyłączona")
-        sendSMSToTopic(ackSMS, "sms-output")
-      }
-    } else {
-      sendSMSToTopic(sms, "sms-output")
-    }
-  }
-
-  def handleRegularSMS(sms: SMS): Future[RecordMetadata] = {
-    val acceptSMSF = db.clientOptedIn.exists(sms.sender).flatMap {
-      case true => smsChecker.checkIfSMSIsSafe(sms)
-      case false => Future.successful(true)
-    }
-    acceptSMSF.flatMap { acceptSMS =>
-      val topic = if (acceptSMS) {
-        "sms-output"
-      } else {
-        "sms-rejected"
-      }
-      sendSMSToTopic(sms, topic)
-    }
-  }
-
-  def sendSMSToTopic(sms: SMS, topic: String): Future[RecordMetadata] = {
-    val promise = Promise[RecordMetadata]()
-    println(s"sending $sms to $topic")
-    val outputRecord = new ProducerRecord[String, String]("sms-output", sms.asJson.noSpaces)
-    producer.send(outputRecord, (metadata, exception) => {
-      if (exception != null) {
-        promise.failure(exception)
-      } else {
-        promise.success(metadata)
-      }
-    })
-    promise.future
-  }
-
-  def main(args: Array[String]): Unit = {
-    try {
-      while (true) {
-        val records = consumer.poll(Duration.ofMillis(100))
-        records.forEach { record =>
-          decode[SMS](record.value()) match {
-            case Left(error) => println(s"Error: $error")
-            case Right(sms) =>
-              if (sms.recipient == optInNumber) {
-                handleOptIn(sms)
-              } else {
-                handleRegularSMS(sms)
-              }
-          }
+  try {
+    while (true) {
+      val records = consumer.poll(Duration.ofMillis(100))
+      records.forEach { record =>
+        decode[SMS](record.value()) match {
+          case Left(error) => println(s"Error: $error")
+          case Right(sms) => smsHandler.handle(sms)
         }
       }
-    } catch {
-      case e: InterruptedException => println("Shutting down...")
-    } finally {
-      consumer.close()
-      producer.close()
     }
+  } catch {
+    case _: InterruptedException => println("Shutting down...")
+  } finally {
+    consumer.close()
+    producer.close()
   }
 }
