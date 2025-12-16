@@ -38,7 +38,7 @@ object Main extends App with PhilterDBProvider {
   val smsProducer = new SMSProducer(producer)
   val smsHandler = new SMSHandler(db, smsProducer, smsChecker, optInNumber)
 
-  println("Waiting for casandra...")
+  println("Waiting for Cassandra...")
   Thread.sleep(30000)
   println("Done waiting")
   Await.result(db.clientOptedIn.create.ifNotExists().future(), 10.seconds)
