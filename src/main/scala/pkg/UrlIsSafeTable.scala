@@ -17,10 +17,11 @@ abstract class UrlIsSafeTable extends Table[UrlIsSafeTable, UrlIsSafe] {
       .where(_.url eqs url)
       .one()
 
-  def add(url: String, isSafe: Boolean): Future[ResultSet] =
+  def add(url: String, isSafe: Boolean): Future[Unit] =
     insert
       .value(_.url, url)
       .value(_.isSafe, isSafe)
       .ttl(ttl)
       .future()
+      .map(_ => ())
 }

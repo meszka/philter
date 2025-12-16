@@ -5,21 +5,15 @@ import java.util.Properties
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
-import org.nibor.autolink.{LinkExtractor, LinkType}
-import sttp.client4.{Backend, DefaultFutureBackend, Response, UriContext, quickRequest}
 
 import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
-import scala.jdk.CollectionConverters.SetHasAsJava
-import scala.jdk.CollectionConverters.IterableHasAsScala
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
-import pkg.{MyDBProvider, SMS, WebriskBody, WebriskResponse}
+import pkg.{LinkChecker, MyDBProvider, SMS, SMSChecker}
 
 object Main extends MyDBProvider {
-  val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
-  val sttpBackend: Backend[Future] = DefaultFutureBackend()
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
 
@@ -31,48 +25,8 @@ object Main extends MyDBProvider {
     10.seconds
   )
 
-  def checkIfSMSIsSafe(sms: SMS): Future[Boolean] = {
-    println("checking if sms is safe")
-    val linkSpans = linkExtractor.extractLinks(sms.message).asScala
-    val links = linkSpans.map(linkSpan => sms.message.substring(linkSpan.getBeginIndex, linkSpan.getEndIndex))
-    val checks = Future.sequence(links.map(checkIfURLIsSafe))
-    checks.map(_.forall(isSafeOpt => isSafeOpt.getOrElse(true)))
-  }
-
-  def checkIfURLIsSafe(url: String): Future[Option[Boolean]] = {
-    val isSafeOptF = db.urlIsSafe.get(url).flatMap {
-      case Some(isSafe) => Future.successful(Some(isSafe))
-      case None =>
-        if (googleApiKey == "fake") {
-          checkIfURLIsSafeReal(url)
-        } else {
-          checkIfURLIsSafeFake(url)
-        }
-    }
-    isSafeOptF.foreach(_.foreach(isSafe => db.urlIsSafe.add(url, isSafe)))
-    isSafeOptF
-  }
-
-  def checkIfURLIsSafeReal(url: String): Future[Option[Boolean]] = {
-    val body = WebriskBody(uri=url).asJson.noSpaces
-    val response: Future[Response[String]] = quickRequest
-      .body(body)
-      .post(uri"https://webrisk.googleapis.com/v1eap1:evaluateUri?key=$googleApiKey")
-      .send(sttpBackend)
-    response.map { response =>
-      decode[WebriskResponse](response.body).map { response =>
-        response.scores.exists(score => score.confidenceLevel == "EXTREMELY_HIGH")
-      }.toOption
-    }
-    // TODO: retry on failure?
-  }
-
-  def checkIfURLIsSafeFake(url: String): Future[Option[Boolean]] = {
-    Future {
-      Thread.sleep(1000)
-      Option(!url.contains("m-bonk"))
-    }
-  }
+  val linkChecker = new LinkChecker(googleApiKey)
+  val smsChecker = new SMSChecker(db, linkChecker)
 
   val bootstrapServers = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
@@ -113,7 +67,7 @@ object Main extends MyDBProvider {
 
   def handleRegularSMS(sms: SMS): Future[RecordMetadata] = {
     val acceptSMSF = db.clientOptedIn.exists(sms.sender).flatMap {
-      case true => checkIfSMSIsSafe(sms)
+      case true => smsChecker.checkIfSMSIsSafe(sms)
       case false => Future.successful(true)
     }
     acceptSMSF.flatMap { acceptSMS =>

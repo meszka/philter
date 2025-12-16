@@ -39,3 +39,7 @@ libraryDependencies ++= Seq(
   "com.outworkers" %% "phantom-connectors" % "2.59.0",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value
 )
+
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.19"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
+libraryDependencies += "org.scalatestplus" %% "mockito-5-10" % "3.2.18.0" % Test

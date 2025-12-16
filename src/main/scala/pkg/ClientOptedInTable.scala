@@ -15,15 +15,17 @@ abstract class ClientOptedInTable extends Table[ClientOptedInTable, ClientOptedI
       .one()
       .map(_.isDefined)
 
-  def add(clientId: String): Future[ResultSet] =
+  def add(clientId: String): Future[Unit] =
     insert
       .value(_.client, clientId)
       .consistencyLevel_=(ConsistencyLevel.QUORUM)
       .future()
+      .map(_ => ())
 
-  def remove(clientId: String): Future[ResultSet] =
+  def remove(clientId: String): Future[Unit] =
     delete
       .where(_.client eqs clientId)
       .consistencyLevel_=(ConsistencyLevel.QUORUM)
       .future()
+      .map(_ => ())
 }
