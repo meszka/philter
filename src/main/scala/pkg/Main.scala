@@ -43,10 +43,8 @@ object Main extends App with PhilterDBProvider {
   println("Waiting for casandra...")
   Thread.sleep(30000)
   println("Done waiting")
-  Await.result(
-    db.clientOptedIn.create.ifNotExists().future(),
-    10.seconds
-  )
+  Await.result(db.clientOptedIn.create.ifNotExists().future(), 10.seconds)
+  Await.result(db.urlIsSafe.create.ifNotExists().future(), 10.seconds)
 
   consumer.subscribe(List("sms-input").asJava)
 
@@ -60,6 +58,7 @@ object Main extends App with PhilterDBProvider {
           case Right(sms) =>
             smsHandler.handle(sms).onComplete {
               case Failure(e) => println(s"Error handling SMS: ${e.getMessage}")
+              case _ =>
             }
         }
       }
