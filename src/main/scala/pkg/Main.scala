@@ -13,6 +13,8 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import io.circe.parser.decode
 
+import scala.util.{Failure, Success}
+
 object Main extends App with MyDBProvider {
   val googleApiKey: String = sys.env.getOrElse("GOOGLE_API_KEY", "fake")
   val optInNumber: String = sys.env.getOrElse("OPT_IN_NUMBER", "123")
@@ -36,6 +38,7 @@ object Main extends App with MyDBProvider {
   consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+  consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
 
   val consumer = new KafkaConsumer[String, String](consumerProps)
   consumer.subscribe(List("sms-input").asJava)
@@ -54,8 +57,14 @@ object Main extends App with MyDBProvider {
       val records = consumer.poll(Duration.ofMillis(100))
       records.forEach { record =>
         decode[SMS](record.value()) match {
-          case Left(error) => println(s"Error: $error")
-          case Right(sms) => smsHandler.handle(sms)
+          case Left(error) =>
+            println(s"Error decoding SMS: $error")
+            consumer.commitAsync()
+          case Right(sms) =>
+            smsHandler.handle(sms).onComplete {
+              case Success(()) => consumer.commitAsync()
+              case Failure(e) => println(s"Error handling SMS: ${e.getMessage}")
+            }
         }
       }
     }
