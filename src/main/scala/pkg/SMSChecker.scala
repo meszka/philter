@@ -11,7 +11,7 @@ class SMSChecker(db: PhilterDB, linkChecker: LinkChecker) {
   val linkExtractor: LinkExtractor = LinkExtractor.builder().linkTypes(Set(LinkType.URL).asJava).build()
 
   def checkIfSMSIsSafe(sms: SMS): Future[Boolean] = {
-    println("checking if sms is safe")
+    println(s"checking if $sms is safe")
     val linkSpans = linkExtractor.extractLinks(sms.message).asScala
     val links = linkSpans.map(linkSpan => sms.message.substring(linkSpan.getBeginIndex, linkSpan.getEndIndex))
     val checks = Future.sequence(links.map(checkIfURLIsSafe))
@@ -23,12 +23,12 @@ class SMSChecker(db: PhilterDB, linkChecker: LinkChecker) {
       case Some(isSafe) => Future.successful(Some(isSafe))
       case None => linkChecker.checkIfUrlIsSafe(url)
     }
-    isSafeOptF.foreach {
-      _.foreach(isSafe => {
-        println("adding to cache")
-        db.urlIsSafe.add(url, isSafe)
-      })
+    isSafeOptF.flatMap {
+      case Some(isSafe) =>
+        println(s"adding $url to cache")
+        db.urlIsSafe.add(url, isSafe).map(_ => Option(isSafe))
+      case None =>
+        Future.successful(None)
     }
-    isSafeOptF
   }
 }

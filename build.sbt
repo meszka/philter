@@ -24,8 +24,9 @@ libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % "3.2.19",
   "org.scalatest" %% "scalatest" % "3.2.19" % Test,
   "org.scalatestplus" %% "mockito-5-10" % "3.2.18.0" % Test,
-  "ch.qos.logback" % "logback-classic" % "1.5.8"
 )
+
+Test / parallelExecution := false
 
 assembly / assemblyMergeStrategy := {
   case "module-info.class" =>
