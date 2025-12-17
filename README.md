@@ -10,7 +10,10 @@ Uwaga: po uruchomieniu główna aplikacja (scala-app) czeka 30s na pełne urucho
 
 Aplikacja przyjmuje ustawienia w formie zmiennych środowiskowych. Można zmienić ich wartości w pliku `docker-compose.yml`:
 
-- `GOOGLE_API_KEY` - klucz API dla usługi `https://cloud.google.com/web-risk/docs/reference/rest/v1eap1/TopLevel/evaluateUri`. Domyślna wartość `fake` powoduje, że używana jest aatrapa - aplikacja podczas weryfikacji adresu czeka 1s i uznaje adres za niebezpieczny jeśli zawiera ciąg znaków `m-bonk`
+- `GOOGLE_API_KEY` - klucz API dla usługi
+  `https://cloud.google.com/web-risk/docs/reference/rest/v1eap1/TopLevel/evaluateUri`. Domyślna wartość `fake` powoduje,
+  że używana jest aatrapa - aplikacja podczas weryfikacji adresu czeka 1s i uznaje adres za niebezpieczny jeśli zawiera
+  ciąg znaków `m-bonk`
 - `URL_CACHE_TTL_SECONDS` - TTL dla cache-a sprawdzonych adresów w sekundach (domyślnie 24h)
 - `OPT_IN_NUMBER` - numer na który klient wysyła wiadomość `START` lub `STOP`
 
@@ -77,8 +80,7 @@ Ze względu na dobrą skalowalność do wielu węzłów i możliwość przetwarz
 Informacja o "opt-in", czyli o tym czy dany użytkownik korzysta z usługi, czy z niej zrezygnował
 trzymana jest w bazie danych Cassandra.
 
-W bazie Cassandra trzymany jest także cache sprawdzonych adresów dla
-uniknięcia niepotrzebnych opłat.
+W bazie Cassandra trzymany jest także cache sprawdzonych adresów dla uniknięcia niepotrzebnych opłat.
 
 ### Dlaczego Cassandra?
 
@@ -90,11 +92,10 @@ informacja ta była dostępna dla wszystkich instancji aplikacji, ale
 aktualizacje nie muszą być natychmiast widoczne dla każdej instancji ("eventual
 consistency" jest akceptowalne).
 
-Cache trzymany jest w Cassandrze "przy okazji" - żeby uniknąć komplikowania architektury dodając kolejny element. Dla
-cache-a utrata zapisu w przypadku
-awarii nie jest dużym problemem. Wspólny cache dla wszystkich instancji
-aplikacji jest plusem, ale też nie jest niezbędny. Dlatego w przypadku cache-a
-możnaby zastosować też inne rozwiązanie, np. Redis (z replikacją lub bez).
+Cache trzymany jest w Cassandrze "przy okazji" - żeby uniknąć komplikowania architektury dodając kolejny element.
+Dla cache-a utrata zapisu w przypadku awarii nie jest dużym problemem.
+Wspólny cache dla wszystkich instancji aplikacji jest plusem, ale też nie jest niezbędny.
+Dlatego w przypadku cache-a możnaby zastosować też inne rozwiązanie, np. Redis (z replikacją lub bez).
 
 
 ## Kolejność wiadomości
@@ -113,7 +114,7 @@ b) w **części systemu odpowiedzialnym za dostarczanie wiadomości** dodając c
 
 ## Ponawianie zapytań
 
-Przydałby się mechanizm ponawiania zapytania do usługi weryfikującej bezpieczeństwo linków.
+Być może warto wprowadzić mechanizm ponawiania zapytania do usługi weryfikującej bezpieczeństwo linków.
 W tej chwili w przypadku niepowodzenia, link jest uznawany za bezpieczny (ale nie trafia do cache-a).
 
 ## Wykorzystanie Kafka Streams i KTable

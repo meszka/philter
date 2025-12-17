@@ -30,7 +30,6 @@ class LinkChecker(googleApiKey: String) {
         response.scores.exists(score => score.confidenceLevel == "EXTREMELY_HIGH")
       }.toOption
     }
-    // TODO: retry on failure?
   }
 
   def checkIfURLIsSafeFake(url: String): Future[Option[Boolean]] = {
